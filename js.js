@@ -1,20 +1,22 @@
-let sortDirection = 'asc';
-let sortedColumnIndex = 0;
-
-
 fetch('json.json')
-  .then(response => response.json())
-  .then(data => {
+  .then((response) => response.json())
+  .then((data) => {
 
+    let sortDirection = 'asc';
+    let sortedColumnIndex = 0;
 
     const table = document.createElement('table');
+    table.classList.add('main-table')
     document.body.appendChild(table);
 
 
+
     const headerRow = document.createElement('tr');
+    headerRow.classList.add('tr-row');
     table.appendChild(headerRow);
 
-    const headers = ['Name', 'Phone', 'Email', 'Date', 'Company'];
+
+    const headers = ['Name', 'Phone', 'Email', 'Date', 'Company', 'Delete'];
 
 
     for (let i = 0; i < headers.length; i++) {
@@ -22,107 +24,101 @@ fetch('json.json')
       const th = document.createElement('th');
       headerRow.appendChild(th);
 
-
-      const sortAsc = document.createElement('span');
-      sortAsc.classList.add('sort-asc');
-      sortAsc.addEventListener('click', () => {
-        sortDirection = 'asc';
-        sortedColumnIndex = i;
+      th.classList.add('sorttable');
+      th.addEventListener('click', () => {
+        if (sortedColumnIndex === i) {
+          sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortedColumnIndex = i;
+          sortDirection = 'asc';
+        }
         sortTable();
       });
-      th.appendChild(sortAsc);
 
-      const sortDesc = document.createElement('span');
-      sortDesc.classList.add('sort-desc');
-      sortDesc.addEventListener('click', () => {
-        sortDirection = 'desc';
-        sortedColumnIndex = i;
-        sortTable();
-      });
-      th.appendChild(sortDesc);
 
-      const headerText = document.createElement('span');
-      headerText.textContent = header;
-      th.appendChild(headerText);
+      th.textContent = header;
+
+      if (i === sortedColumnIndex) {
+        th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc', 'none');
+      }
     }
 
+    for (let i = 0; i < data.length; i++) {
+      const row = document.createElement('tr');
+      table.appendChild(row);
+
+      const item = data[i];
+      const keys = Object.keys(item);
 
 
-    const tbody = document.createElement('tbody');
-    table.appendChild(tbody);
+      for (let j = 0; j < keys.length; j++) {
+        const key = keys[j];
+        const cell = document.createElement('td');
+        row.appendChild(cell);
+        cell.textContent = item[key];
+      }
 
 
-    for (const row of data) {
+      const deleteButtonCell = document.createElement('td');
+      row.appendChild(deleteButtonCell);
 
-      const tr = document.createElement('tr');
-      tbody.appendChild(tr);
+      const deleteButton = document.createElement('button');
+      deleteButton.classList.add('delete-button');
 
-
-      const tdName = document.createElement('td');
-      tdName.textContent = row.name;
-      tr.appendChild(tdName);
-
-
-      const tdPhone = document.createElement('td');
-      tdPhone.textContent = row.phone;
-      tr.appendChild(tdPhone);
+      deleteButton.textContent = 'Delete';
+      deleteButtonCell.appendChild(deleteButton);
 
 
-      const tdEmail = document.createElement('td');
-      tdEmail.textContent = row.email;
-      tr.appendChild(tdEmail);
-
-
-      const tdDate = document.createElement('td');
-      tdDate.textContent = row.date;
-      tr.appendChild(tdDate);
-
-
-      const tdCompany = document.createElement('td');
-      tdCompany.textContent = row.company;
-      tr.appendChild(tdCompany);
+      deleteButton.addEventListener('click', () => {
+        const rowIndex = Array.from(table.rows).indexOf(row);
+        table.deleteRow(rowIndex);
+      });
     }
 
 
     function sortTable() {
+      const rows = Array.from(table.rows).slice(1);
+      const sortFunction = getSortFunction(sortedColumnIndex, sortDirection);
 
-      const rows = Array.from(tbody.rows);
+      rows.sort(sortFunction);
 
 
-      rows.sort((aRow, bRow) => {
-        const aValue = aRow.cells[sortedColumnIndex].textContent;
-        const bValue = bRow.cells[sortedColumnIndex].textContent;
-        if (sortDirection === 'asc') {
-          return aValue.localeCompare(bValue);
+      while (table.rows.length > 1) {
+        table.deleteRow(table.rows.length - 1);
+      }
+
+      rows.forEach((row) => table.appendChild(row));
+
+      const ths = headerRow.querySelectorAll('th');
+
+      for (let i = 0; i < ths.length; i++) {
+        const th = ths[i];
+
+        if (i === sortedColumnIndex) {
+          th.classList.remove('sort-asc', 'sort-desc', 'none');
+          th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
         } else {
-          return bValue.localeCompare(aValue);
+          th.classList.remove('sort-asc', 'sort-desc', 'none');
         }
-      });
-
-
-      tbody.innerHTML = '';
-
-
-      for (const row of rows) {
-        tbody.appendChild(row);
       }
-
-
-      const headers = headerRow.querySelectorAll('th');
-
-
-      for (const header of headers) {
-        header.classList.remove('sort-asc', 'sort-desc');
-      }
-
-      const sortedHeader = headers[sortedColumnIndex];
-
-      const sortClass = sortDirection === 'asc' ? 'sort-asc' : 'sort-desc';
-
-      sortedHeader.classList.add(sortClass);
     }
 
+
+    function getSortFunction(columnIndex, direction) {
+      return (row1, row2) => {
+        const value1 = row1.cells[columnIndex].textContent.trim().toLowerCase();
+        const value2 = row2.cells[columnIndex].textContent.trim().toLowerCase();
+
+        if (value1 === value2) {
+          return 0;
+        }
+
+        const result = value1 < value2 ? -1 : 1;
+
+        return direction === 'asc' ? result : -result;
+      };
+    }
   })
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
   });
